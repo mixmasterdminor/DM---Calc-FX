@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>DM BPM FX</title>
+
+  <meta name="theme-color" content="#020617" />
+  <meta name="description" content="Calculadora de delay, reverb time e modulação baseada em BPM." />
+
+  <!-- Ícone para browser e iPhone -->
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-512.png" />
+
+  <!-- Manifest PWA -->
+  <link rel="manifest" href="manifest.json" />
+
+  <style>
+    :root {
+      --bg: #020617;
+      --card: #0f172a;
+      --card-light: #1e293b;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #a78bfa;
+      --green: #34d399;
+      --border: rgba(255, 255, 255, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.2), transparent 30%),
+        radial-gradient(circle at top right, rgba(167, 139, 250, 0.16), transparent 32%),
+        var(--bg);
+      color: var(--text);
+      padding: 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      padding-bottom: 40px;
+    }
+
+    header {
+      text-align: center;
+      padding: 22px 0 14px;
+    }
+
+    .app-icon {
+      width: 108px;
+      height: 108px;
+      border-radius: 26px;
+      margin: 0 auto 16px;
+      display: block;
+      object-fit: cover;
+      box-shadow:
+        0 0 28px rgba(56, 189, 248, 0.35),
+        0 0 48px rgba(168, 85, 247, 0.25);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 7vw, 3.2rem);
+      letter-spacing: -0.04em;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--green));
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin: 10px auto 0;
+      line-height: 1.5;
+      max-width: 560px;
+      font-size: 0.98rem;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 18px;
+      margin-top: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    label {
+      font-size: 0.88rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--card-light);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
+    }
+
+    .bpm-box {
+      margin-top: 14px;
+      padding: 18px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(167, 139, 250, 0.14));
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .bpm-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 5px;
+    }
+
+    .bpm-box strong {
+      font-size: 2.4rem;
+      color: var(--green);
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      color: #020617;
+      background: var(--accent);
+    }
+
+    button.secondary {
+      background: var(--card-light);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .pill {
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .result {
+      background: rgba(30, 41, 59, 0.75);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 15px;
+    }
+
+    .result small {
+      color: var(--muted);
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .result strong {
+      color: var(--green);
+      font-size: 1.45rem;
+      display: block;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result em {
+      color: var(--muted);
+      font-style: normal;
+      font-size: 0.85rem;
+      display: block;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 520px;
+      background: rgba(30, 41, 59, 0.45);
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.09);
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    th {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.74rem;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    td.value {
+      color: var(--green);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.hz {
+      color: var(--accent);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.55;
+      margin-top: 12px;
+    }
+
+    .install-banner {
+      display: none;
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+      z-index: 50;
+    }
+
+    .install-banner.show {
+      display: block;
+    }
+
+    .install-banner p {
+      margin: 0 0 12px;
+      color: var(--text);
+      line-height: 1.4;
+      font-size: 0.95rem;
+    }
+
+    .install-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 20px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 650px) {
+      body {
+        padding: 12px;
+      }
+
+      .form-grid,
+      .result-grid,
+      .buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 15px;
+        border-radius: 18px;
+      }
+
+      .result strong {
+        font-size: 1.25rem;
+      }
+
+      .bpm-box strong {
+        font-size: 2rem;
+      }
+
+      .app-icon {
+        width: 96px;
+        height: 96px;
+        border-radius: 22px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header>
+      <!-- Ícone DM BPM FX -->
+      <img src="icon-512.png" alt="DM BPM FX Icon" class="app-icon" />
+
+      <h1>DM BPM FX</h1>
+
+      <p class="subtitle">
+        Calculadora de delay, reverb time, pre-delay e modulação sincronizados com o BPM.
+      </p>
+    </header>
+
+    <section class="card">
+      <div class="form-grid">
+        <div class="field">
+          <label for="bpm">BPM</label>
+          <input id="bpm" type="number" value="120" min="20" max="300" step="0.1" inputmode="decimal" />
+        </div>
+
+        <div class="field">
+          <label for="feel">Tipo de divisão</label>
+          <select id="feel">
+            <option value="normal">Normal</option>
+            <option value="dotted">Pontuada</option>
+            <option value="triplet">Tercinada</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="reverbStyle">Tipo de reverb</label>
+          <select id="reverbStyle">
+            <option value="tight">Curto / Tight</option>
+            <option value="medium" selected>Médio / Musical</option>
+            <option value="large">Longo / Atmosférico</option>
+            <option value="huge">Huge / Cinemático</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="modMode">Modulação base</label>
+          <select id="modMode">
+            <option value="slow">Lenta</option>
+            <option value="medium" selected>Média</option>
+            <option value="fast">Rápida</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="bpm-box">
+        <span>Tempo de 1 semínima</span>
+        <strong><span id="quarterMs">500</span> ms</strong>
+      </div>
+
+      <div class="buttons">
+        <button id="calculateBtn">Calcular</button>
+        <button class="secondary" id="resetBtn">Reset</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <h2>Resumo</h2>
+        <span class="pill" id="feelTag">Normal</span>
+      </div>
+
+      <div class="result-grid">
+        <div class="result">
+          <small>Pre-delay sugerido</small>
+          <strong id="preDelay">63 ms</strong>
+          <em>Bom para separar a fonte do reverb.</em>
+        </div>
+
+        <div class="result">
+          <small>Reverb time</small>
+          <strong id="reverbTime">1,00 s</strong>
+          <em id="reverbText">Reverb médio e musical.</em>
+        </div>
+
+        <div class="result">
+          <small>Modulação principal</small>
+          <strong id="mainMod">0,500 Hz</strong>
+          <em id="mainModText">Ciclo de 2000 ms.</em>
+        </div>
+
+        <div class="result">
+          <small>Delay recomendado</small>
+          <strong id="recommendedDelay">375 ms</strong>
+          <em>Valor útil para grooves musicais.</em>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <h2>Delay</h2>
+        <span class="pill">ms</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nota</th>
+              <th>Nome</th>
+              <th>Tempo</th>
+              <th>Hz</th>
+            </tr>
+          </thead>
+          <tbody id="delayTable"></tbody>
+        </table>
+      </div>
+
+      <p class="hint">
+        Dica: delays pontuados funcionam muito bem em synths, guitarras e vozes.
+        Delays tercinados dão uma sensação mais swingada ou orgânica.
+      </p>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <h2>Modulação</h2>
+        <span class="pill">LFO</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Divisão</th>
+              <th>Uso</th>
+              <th>Ciclo</th>
+              <th>Frequência</th>
+            </tr>
+          </thead>
+          <tbody id="modTable"></tbody>
+        </table>
+      </div>
+
+      <p class="hint">
+        Usa valores lentos para chorus, phaser e movimento subtil.
+        Usa valores rápidos para tremolo, autopan e efeitos rítmicos.
+      </p>
+    </section>
+
+    <footer>
+      DM BPM FX · App offline depois de instalada.
+      <br />
+      Fórmula: 60.000 / BPM = tempo da semínima em ms.
+    </footer>
+  </main>
+
+  <div class="install-banner" id="installBanner">
+    <p>
+      Queres instalar a DM BPM FX como app no teu telemóvel?
+    </p>
+    <div class="install-actions">
+      <button id="installBtn">Instalar</button>
+      <button class="secondary" id="closeInstallBtn">Agora não</button>
+    </div>
+  </div>
+
+  <script>
+    var bpmInput = document.getElementById("bpm");
+    var feelInput = document.getElementById("feel");
+    var reverbStyleInput = document.getElementById("reverbStyle");
+    var modModeInput = document.getElementById("modMode");
+
+    var calculateBtn = document.getElementById("calculateBtn");
+    var resetBtn = document.getElementById("resetBtn");
+
+    var quarterMsEl = document.getElementById("quarterMs");
+    var feelTagEl = document.getElementById("feelTag");
+
+    var preDelayEl = document.getElementById("preDelay");
+    var reverbTimeEl = document.getElementById("reverbTime");
+    var reverbTextEl = document.getElementById("reverbText");
+    var mainModEl = document.getElementById("mainMod");
+    var mainModTextEl = document.getElementById("mainModText");
+    var recommendedDelayEl = document.getElementById("recommendedDelay");
+
+    var delayTableEl = document.getElementById("delayTable");
+    var modTableEl = document.getElementById("modTable");
+
+    var installBanner = document.getElementById("installBanner");
+    var installBtn = document.getElementById("installBtn");
+    var closeInstallBtn = document.getElementById("closeInstallBtn");
+    var deferredPrompt = null;
+
+    var delayNotes = [
+      { note: "1/1", name: "Semibreve", multiplier: 4 },
+      { note: "1/2", name: "Mínima", multiplier: 2 },
+      { note: "1/4", name: "Semínima", multiplier: 1 },
+      { note: "1/8", name: "Colcheia", multiplier: 0.5 },
+      { note: "1/16", name: "Semicolcheia", multiplier: 0.25 },
+      { note: "1/32", name: "Fusa", multiplier: 0.125 }
+    ];
+
+    var modNotes = [
+      { division: "4 compassos", use: "Movimento muito lento", multiplier: 16 },
+      { division: "2 compassos", use: "Chorus largo", multiplier: 8 },
+      { division: "1 compasso", use: "Phaser / AutoPan suave", multiplier: 4 },
+      { division: "1/2", use: "Tremolo lento", multiplier: 2 },
+      { division: "1/4", use: "Tremolo rítmico", multiplier: 1 },
+      { division: "1/8", use: "Autopan rápido", multiplier: 0.5 },
+      { division: "1/16", use: "Efeito rápido", multiplier: 0.25 }
+    ];
+
+    function formatMs(value) {
+      return Math.round(value).toLocaleString("pt-PT") + " ms";
+    }
+
+    function formatHzFromMs(ms) {
+      return (1000 / ms).toFixed(3).replace(".", ",") + " Hz";
+    }
+
+    function formatSeconds(ms) {
+      return (ms / 1000).toFixed(2).replace(".", ",") + " s";
+    }
+
+    function getBpm() {
+      var bpm = parseFloat(bpmInput.value);
+
+      if (!bpm || bpm <= 0) {
+        return 120;
+      }
+
+      return bpm;
+    }
+
+    function getFeelData() {
+      var feel = feelInput.value;
+
+      if (feel === "dotted") {
+        return {
+          name: "Pontuada",
+          multiplier: 1.5
+        };
+      }
+
+      if (feel === "triplet") {
+        return {
+          name: "Tercinada",
+          multiplier: 2 / 3
+        };
+      }
+
+      return {
+        name: "Normal",
+        multiplier: 1
+      };
+    }
+
+    function getReverbData() {
+      var style = reverbStyleInput.value;
+
+      if (style === "tight") {
+        return {
+          multiplier: 1,
+          text: "Curto, seco e controlado."
+        };
+      }
+
+      if (style === "large") {
+        return {
+          multiplier: 4,
+          text: "Longo, atmosférico e espaçoso."
+        };
+      }
+
+      if (style === "huge") {
+        return {
+          multiplier: 8,
+          text: "Muito longo, ideal para ambient ou cinematic."
+        };
+      }
+
+      return {
+        multiplier: 2,
+        text: "Médio, musical e equilibrado."
+      };
+    }
+
+    function getMainModMultiplier() {
+      var mode = modModeInput.value;
+
+      if (mode === "slow") {
+        return 8;
+      }
+
+      if (mode === "fast") {
+        return 0.5;
+      }
+
+      return 4;
+    }
+
+    function calculate() {
+      var bpm = getBpm();
+      var quarterMs = 60000 / bpm;
+      var feel = getFeelData();
+      var reverb = getReverbData();
+
+      quarterMsEl.textContent = Math.round(quarterMs);
+      feelTagEl.textContent = feel.name;
+
+      var preDelay = quarterMs * 0.125;
+      var reverbMs = quarterMs * reverb.multiplier;
+
+      preDelayEl.textContent = formatMs(preDelay);
+      reverbTimeEl.textContent = formatSeconds(reverbMs);
+      reverbTextEl.textContent = reverb.text;
+
+      var mainModMs = quarterMs * getMainModMultiplier();
+      mainModEl.textContent = formatHzFromMs(mainModMs);
+      mainModTextEl.textContent = "Ciclo de " + formatMs(mainModMs) + ".";
+
+      var recommendedDelay = quarterMs * 0.5 * 1.5;
+      recommendedDelayEl.textContent = formatMs(recommendedDelay);
+
+      delayTableEl.innerHTML = "";
+
+      for (var i = 0; i < delayNotes.length; i++) {
+        var item = delayNotes[i];
+        var ms = quarterMs * item.multiplier * feel.multiplier;
+
+        var row = document.createElement("tr");
+
+        row.innerHTML =
+          "<td>" + item.note + "</td>" +
+          "<td>" + item.name + "</td>" +
+          "<td class='value'>" + formatMs(ms) + "</td>" +
+          "<td class='hz'>" + formatHzFromMs(ms) + "</td>";
+
+        delayTableEl.appendChild(row);
+      }
+
+      modTableEl.innerHTML = "";
+
+      for (var j = 0; j < modNotes.length; j++) {
+        var mod = modNotes[j];
+        var modMs = quarterMs * mod.multiplier;
+
+        var modRow = document.createElement("tr");
+
+        modRow.innerHTML =
+          "<td>" + mod.division + "</td>" +
+          "<td>" + mod.use + "</td>" +
+          "<td class='value'>" + formatMs(modMs) + "</td>" +
+          "<td class='hz'>" + formatHzFromMs(modMs) + "</td>";
+
+        modTableEl.appendChild(modRow);
+      }
+    }
+
+    function resetApp() {
+      bpmInput.value = 120;
+      feelInput.value = "normal";
+      reverbStyleInput.value = "medium";
+      modModeInput.value = "medium";
+      calculate();
+    }
+
+    bpmInput.addEventListener("input", calculate);
+    feelInput.addEventListener("change", calculate);
+    reverbStyleInput.addEventListener("change", calculate);
+    modModeInput.addEventListener("change", calculate);
+    calculateBtn.addEventListener("click", calculate);
+    resetBtn.addEventListener("click", resetApp);
+
+    closeInstallBtn.addEventListener("click", function () {
+      installBanner.classList.remove("show");
+    });
+
+    installBtn.addEventListener("click", function () {
+      if (!deferredPrompt) {
+        installBanner.classList.remove("show");
+        return;
+      }
+
+      deferredPrompt.prompt();
+
+      deferredPrompt.userChoice.then(function () {
+        deferredPrompt = null;
+        installBanner.classList.remove("show");
+      });
+    });
+
+    window.addEventListener("beforeinstallprompt", function (event) {
+      event.preventDefault();
+      deferredPrompt = event;
+      installBanner.classList.add("show");
+    });
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("service-worker.js");
+      });
+    }
+
+    calculate();
+  </script>
+</body>
+</html>
